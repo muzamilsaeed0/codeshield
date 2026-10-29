@@ -1,4 +1,3 @@
-
 const fs = require('node:fs');
 
 function scanFile(filePath) {
@@ -93,20 +92,38 @@ function scanFile(filePath) {
       continue;
     }
 
-   const match = source.slice(index).match(/^eval\s*\(/);
-const previousChar = source[index - 1];
-const isIdentifierPart = previousChar && /[A-Za-z0-9_$]/.test(previousChar);
+    const remaining = source.slice(index);
+    const previousChar = source[index - 1];
+    const isIdentifierPart =
+      previousChar && /[A-Za-z0-9_$]/.test(previousChar);
 
-   if (match && !isIdentifierPart) {
-      findings.push({
-        rule: 'JS001',
-        severity: 'warning',
-        line,
-        message: 'Potentially unsafe eval() usage detected.',
-      });
+    if (!isIdentifierPart) {
+      const evalMatch = remaining.match(/^eval\s*\(/);
+      const functionMatch = remaining.match(/^new\s+Function\s*\(/);
 
-      index += match[0].length;
-      continue;
+      if (evalMatch) {
+        findings.push({
+          rule: 'JS001',
+          severity: 'warning',
+          line,
+          message: 'Potentially unsafe eval() usage detected.',
+        });
+
+        index += evalMatch[0].length;
+        continue;
+      }
+
+      if (functionMatch) {
+        findings.push({
+          rule: 'JS002',
+          severity: 'warning',
+          line,
+          message: 'Dynamic code construction with new Function() detected.',
+        });
+
+        index += functionMatch[0].length;
+        continue;
+      }
     }
 
     index++;

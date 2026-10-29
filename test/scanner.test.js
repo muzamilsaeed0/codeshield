@@ -220,3 +220,40 @@ test('skips node_modules and hidden directories', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+test('detects new Function() and reports the correct line', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'dynamic-code.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const total = 2 + 2;\nconst run = new Function("return 2 + 2");\n',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].rule, 'JS002');
+    assert.equal(findings[0].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores new Function() mentioned in comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'text-only.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      '// new Function("test")\nconst text = "new Function()";\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

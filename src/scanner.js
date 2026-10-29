@@ -100,6 +100,7 @@ function scanFile(filePath) {
     if (!isIdentifierPart) {
       const evalMatch = remaining.match(/^eval\s*\(/);
       const functionMatch = remaining.match(/^new\s+Function\s*\(/);
+      const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
 
       if (evalMatch) {
         findings.push({
@@ -122,6 +123,18 @@ function scanFile(filePath) {
         });
 
         index += functionMatch[0].length;
+        continue;
+      }
+
+      if (timerMatch) {
+        findings.push({
+          rule: 'JS003',
+          severity: 'warning',
+          line,
+          message: 'String-based setTimeout() may execute dynamic code.',
+        });
+
+        index += timerMatch[0].length;
         continue;
       }
     }

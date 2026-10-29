@@ -291,3 +291,41 @@ test('ignores eval() text inside a regular expression', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects string-based setTimeout code execution', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'timer.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'setTimeout("runTask()", 1000);\n',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].rule, 'JS003');
+    assert.equal(findings[0].line, 1);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('does not flag callback-based setTimeout', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'timer-safe.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'setTimeout(() => runTask(), 1000);\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

@@ -257,3 +257,37 @@ test('ignores new Function() mentioned in comments and strings', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('ignores eval() inside template string text', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'template-edge.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const text = `eval("example")`;\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores eval() text inside a regular expression', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'regex-edge.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const pattern = /eval\\("example"\\)/;\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

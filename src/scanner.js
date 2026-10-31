@@ -134,6 +134,13 @@ function scanFile(filePath) {
 const outerHtmlMatch = remaining.match(
   /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\.\s*outerHTML\s*=(?!=|>)/
 );
+        const insertAdjacentHtmlMatch = remaining.match(
+  /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\.\s*insertAdjacentHTML\s*\(/
+);
+
+const domParserMatch = remaining.match(
+  /^(?:new\s+)?DOMParser\s*\(\s*\)\s*\.\s*parseFromString\s*\(/
+);
       const suspiciousCharCodeMatch = remaining.match(
         /^eval\s*\(\s*String\s*\.\s*fromCharCode\s*\(/
       );
@@ -242,6 +249,30 @@ if (outerHtmlMatch) {
   });
 
   index += outerHtmlMatch[0].length;
+  continue;
+}
+  
+    if (insertAdjacentHtmlMatch) {
+  findings.push({
+    rule: 'JS010',
+    severity: 'warning',
+    line,
+    message: 'insertAdjacentHTML() may introduce unsafe HTML into the DOM.',
+  });
+
+  index += insertAdjacentHtmlMatch[0].length;
+  continue;
+}
+
+if (domParserMatch) {
+  findings.push({
+    rule: 'JS011',
+    severity: 'warning',
+    line,
+    message: 'DOMParser.parseFromString() may parse untrusted HTML.',
+  });
+
+  index += domParserMatch[0].length;
   continue;
 }
     }

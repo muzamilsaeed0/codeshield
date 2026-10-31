@@ -648,3 +648,51 @@ test('detects nested DOM assignments but ignores equality comparisons', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects insertAdjacentHTML and DOMParser parsing', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'html-parsing.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      [
+        'element.insertAdjacentHTML("beforeend", userInput);',
+        'new DOMParser().parseFromString(userInput, "text/html");',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 2);
+    assert.equal(findings[0].rule, 'JS010');
+    assert.equal(findings[0].line, 1);
+    assert.equal(findings[1].rule, 'JS011');
+    assert.equal(findings[1].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores HTML parsing patterns inside comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'html-parsing-safe.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      [
+        '// element.insertAdjacentHTML("beforeend", input);',
+        'const text = "new DOMParser().parseFromString()";',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

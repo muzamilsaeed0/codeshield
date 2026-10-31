@@ -101,6 +101,7 @@ function scanFile(filePath) {
       const evalMatch = remaining.match(/^eval\s*\(/);
       const functionMatch = remaining.match(/^new\s+Function\s*\(/);
       const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
+      const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
 
       if (evalMatch) {
         findings.push({
@@ -135,6 +136,18 @@ function scanFile(filePath) {
         });
 
         index += timerMatch[0].length;
+        continue;
+      }
+
+      if (intervalMatch) {
+        findings.push({
+          rule: 'JS004',
+          severity: 'warning',
+          line,
+          message: 'String-based setInterval() may execute dynamic code.',
+        });
+
+        index += intervalMatch[0].length;
         continue;
       }
     }

@@ -329,3 +329,27 @@ test('does not flag callback-based setTimeout', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects string-based setInterval', () => {
+  const filePath = path.join(os.tmpdir(), 'codeshield-interval.js');
+  fs.writeFileSync(filePath, 'setInterval("runTask()", 1000);');
+
+  try {
+    const findings = scanFile(filePath);
+    assert.ok(findings.some((finding) => finding.rule === 'JS004'));
+  } finally {
+    fs.unlinkSync(filePath);
+  }
+});
+
+test('does not flag callback-based setInterval', () => {
+  const filePath = path.join(os.tmpdir(), 'codeshield-interval-safe.js');
+  fs.writeFileSync(filePath, 'setInterval(() => runTask(), 1000);');
+
+  try {
+    const findings = scanFile(filePath);
+    assert.ok(!findings.some((finding) => finding.rule === 'JS004'));
+  } finally {
+    fs.unlinkSync(filePath);
+  }
+});

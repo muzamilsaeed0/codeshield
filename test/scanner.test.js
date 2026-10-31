@@ -580,3 +580,71 @@ test('ignores document.write() inside comments and strings', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects innerHTML and outerHTML assignments', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'dom-injection.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'element.innerHTML = userInput;\ncontainer.outerHTML = userInput;\n',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 2);
+    assert.equal(findings[0].rule, 'JS008');
+    assert.equal(findings[0].line, 1);
+    assert.equal(findings[1].rule, 'JS009');
+    assert.equal(findings[1].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores innerHTML and outerHTML in comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'dom-safe.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      '// element.innerHTML = input;\nconst text = "element.outerHTML = input";\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+test('detects nested DOM assignments but ignores equality comparisons', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'dom-edge.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      [
+        'this.element.innerHTML = userInput;',
+        'app.container.outerHTML = userInput;',
+        'if (element.innerHTML === userInput) {}',
+        'if (container.outerHTML == userInput) {}',
+        '',
+      ].join('\n'),
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 2);
+    assert.equal(findings[0].rule, 'JS008');
+    assert.equal(findings[0].line, 1);
+    assert.equal(findings[1].rule, 'JS009');
+    assert.equal(findings[1].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

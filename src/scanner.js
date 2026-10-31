@@ -128,6 +128,12 @@ function scanFile(filePath) {
       const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
       const atobMatch = remaining.match(/^(?:window\s*\.\s*)?atob\s*\(/);
         const documentWriteMatch = remaining.match(/^document\s*\.\s*(?:write|writeln)\s*\(/);
+        const innerHtmlMatch = remaining.match(
+  /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\.\s*innerHTML\s*=(?!=|>)/
+);
+const outerHtmlMatch = remaining.match(
+  /^[A-Za-z_$][\w$]*(?:\s*\.\s*[A-Za-z_$][\w$]*)*\s*\.\s*outerHTML\s*=(?!=|>)/
+);
       const suspiciousCharCodeMatch = remaining.match(
         /^eval\s*\(\s*String\s*\.\s*fromCharCode\s*\(/
       );
@@ -215,12 +221,36 @@ function scanFile(filePath) {
   index += documentWriteMatch[0].length;
   continue;
 }
+        if (innerHtmlMatch) {
+  findings.push({
+    rule: 'JS008',
+    severity: 'warning',
+    line,
+    message: 'Assignment to innerHTML may create DOM XSS risk.',
+  });
+
+  index += innerHtmlMatch[0].length;
+  continue;
+}
+
+if (outerHtmlMatch) {
+  findings.push({
+    rule: 'JS009',
+    severity: 'warning',
+    line,
+    message: 'Assignment to outerHTML may create DOM XSS risk.',
+  });
+
+  index += outerHtmlMatch[0].length;
+  continue;
+}
     }
 
     index++;
   }
 
   return findings;
+    
 }
 
 module.exports = { scanFile };

@@ -127,6 +127,7 @@ function scanFile(filePath) {
       const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
       const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
       const atobMatch = remaining.match(/^(?:window\s*\.\s*)?atob\s*\(/);
+        const documentWriteMatch = remaining.match(/^document\s*\.\s*(?:write|writeln)\s*\(/);
       const suspiciousCharCodeMatch = remaining.match(
         /^eval\s*\(\s*String\s*\.\s*fromCharCode\s*\(/
       );
@@ -202,6 +203,18 @@ function scanFile(filePath) {
         index += atobMatch[0].length;
         continue;
       }
+
+        if (documentWriteMatch) {
+  findings.push({
+    rule: 'JS007',
+    severity: 'warning',
+    line,
+    message: 'Dynamic HTML injection using document.write() may create DOM XSS risk.',
+  });
+
+  index += documentWriteMatch[0].length;
+  continue;
+}
     }
 
     index++;

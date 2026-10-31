@@ -540,3 +540,43 @@ test('detects eval() inside nested template literals', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects document.write() and document.writeln()', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'document-write.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'document.write("<h1>Hello</h1>");\ndocument.writeln("<p>Test</p>");\n',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 2);
+    assert.equal(findings[0].rule, 'JS007');
+    assert.equal(findings[0].line, 1);
+    assert.equal(findings[1].rule, 'JS007');
+    assert.equal(findings[1].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores document.write() inside comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'document-write-safe.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      '// document.write("test")\nconst text = "document.write()";\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

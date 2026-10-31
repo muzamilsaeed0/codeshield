@@ -5,6 +5,7 @@ function scanFile(filePath) {
   const findings = [];
 
   let state = 'code';
+  let templateExpressionDepth = 0;
   let line = 1;
   let index = 0;
 
@@ -53,6 +54,10 @@ function scanFile(filePath) {
     if (state === 'template-string') {
       if (char === '\\') {
         index += 2;
+      } else if (char === '$' && next === '{') {
+        state = 'code';
+        templateExpressionDepth = 1;
+        index += 2;
       } else {
         if (char === '`') {
           state = 'code';
@@ -60,6 +65,25 @@ function scanFile(filePath) {
         index++;
       }
       continue;
+    }
+
+    if (templateExpressionDepth > 0) {
+      if (char === '{') {
+        templateExpressionDepth++;
+        index++;
+        continue;
+      }
+
+      if (char === '}') {
+        templateExpressionDepth--;
+
+        if (templateExpressionDepth === 0) {
+          state = 'template-string';
+        }
+
+        index++;
+        continue;
+      }
     }
 
     if (char === '/' && next === '/') {

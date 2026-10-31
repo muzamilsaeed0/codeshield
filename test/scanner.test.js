@@ -425,3 +425,80 @@ test('detects String.fromCharCode() combined with eval()', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('detects eval() inside template literal expressions', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'template-expression.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const message = `Hello ${eval("alert(1)")}`;'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(
+      findings.some((finding) => finding.rule === 'JS001'),
+      'Expected JS001 warning inside template expression'
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('detects eval() inside nested template expressions', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'nested-template.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const message = `Result: ${(() => { const value = { nested: true }; return eval("alert(1)"); })()}`;'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(findings.some((finding) => finding.rule === 'JS001'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores braces inside strings in template expressions', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'sample.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const message = `Result: ${(() => { const text = "}"; return eval("alert(1)"); })()}`;',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(findings.some((finding) => finding.rule === 'JS001'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('detects eval() inside nested template literals', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'sample.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const message = `Outer ${`Inner ${eval("alert(1)")}`}`;',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(findings.some((finding) => finding.rule === 'JS001'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

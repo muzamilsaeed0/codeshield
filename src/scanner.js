@@ -123,7 +123,7 @@ function scanFile(filePath) {
 
     if (!isIdentifierPart) {
       const evalMatch = remaining.match(/^eval\s*\(/);
-      const functionMatch = remaining.match(/^new\s+Function\s*\(/);
+      const functionMatch = remaining.match(/^(?:new\s+)?Function\s*\(/);
       const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
       const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
       const atobMatch = remaining.match(/^(?:window\s*\.\s*)?atob\s*\(/);
@@ -160,7 +160,7 @@ function scanFile(filePath) {
           rule: 'JS002',
           severity: 'warning',
           line,
-          message: 'Dynamic code construction with new Function() detected.',
+        message: 'Dynamic code construction with Function() detected.',
         });
 
         index += functionMatch[0].length;

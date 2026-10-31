@@ -241,6 +241,27 @@ test('detects new Function() and reports the correct line', () => {
   }
 });
 
+test('detects Function() without new and reports the correct line', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'dynamic-function.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const total = 2 + 2;\nconst run = Function("return 2 + 2");\n',
+      'utf8'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 1);
+    assert.equal(findings[0].rule, 'JS002');
+    assert.equal(findings[0].line, 2);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('ignores new Function() mentioned in comments and strings', () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
   const filePath = path.join(tempDir, 'text-only.js');
@@ -249,6 +270,23 @@ test('ignores new Function() mentioned in comments and strings', () => {
     fs.writeFileSync(
       filePath,
       '// new Function("test")\nconst text = "new Function()";\n',
+      'utf8'
+    );
+
+    assert.deepEqual(scanFile(filePath), []);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('ignores Function() without new when mentioned in comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'function-text.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      '// Function("test")\nconst text = "Function()";\n',
       'utf8'
     );
 

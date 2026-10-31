@@ -103,6 +103,21 @@ function scanFile(filePath) {
       const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
       const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
       const atobMatch = remaining.match(/^(?:window\s*\.\s*)?atob\s*\(/);
+      const suspiciousCharCodeMatch = remaining.match(
+        /^eval\s*\(\s*String\s*\.\s*fromCharCode\s*\(/
+      );
+
+      if (suspiciousCharCodeMatch) {
+        findings.push({
+          rule: 'JS006',
+          severity: 'warning',
+          line,
+          message: 'Character-code conversion combined with eval() may hide executable code.',
+        });
+
+        index += suspiciousCharCodeMatch[0].length;
+        continue;
+      }
 
       if (evalMatch) {
         findings.push({

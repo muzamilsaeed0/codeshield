@@ -386,3 +386,42 @@ test('does not flag atob() inside comments and strings', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });
+
+test('does not flag normal String.fromCharCode() usage', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'safe-charcode.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'const letters = String.fromCharCode(65, 66, 67);'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.equal(findings.length, 0);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('detects String.fromCharCode() combined with eval()', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'suspicious-charcode.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      'eval(String.fromCharCode(97, 108, 101, 114, 116));'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(
+      findings.some((finding) => finding.rule === 'JS006'),
+      'Expected JS006 suspicious character-code warning'
+    );
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

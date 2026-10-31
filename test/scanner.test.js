@@ -353,3 +353,36 @@ test('does not flag callback-based setInterval', () => {
     fs.unlinkSync(filePath);
   }
 });
+
+test('detects atob() usage', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'obfuscated.js');
+
+  try {
+    fs.writeFileSync(filePath, 'const payload = atob("YWxlcnQoMSk=");');
+
+    const findings = scanFile(filePath);
+
+    assert.ok(findings.some((finding) => finding.rule === 'JS005'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('does not flag atob() inside comments and strings', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'codeshield-'));
+  const filePath = path.join(tempDir, 'safe-atob.js');
+
+  try {
+    fs.writeFileSync(
+      filePath,
+      '// atob("hidden")\nconst example = "atob(test)";'
+    );
+
+    const findings = scanFile(filePath);
+
+    assert.ok(!findings.some((finding) => finding.rule === 'JS005'));
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});

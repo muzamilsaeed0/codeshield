@@ -102,6 +102,7 @@ function scanFile(filePath) {
       const functionMatch = remaining.match(/^new\s+Function\s*\(/);
       const timerMatch = remaining.match(/^(?:window\s*\.\s*)?setTimeout\s*\(\s*(['"])/);
       const intervalMatch = remaining.match(/^(?:window\s*\.\s*)?setInterval\s*\(\s*(['"])/);
+      const atobMatch = remaining.match(/^(?:window\s*\.\s*)?atob\s*\(/);
 
       if (evalMatch) {
         findings.push({
@@ -148,6 +149,18 @@ function scanFile(filePath) {
         });
 
         index += intervalMatch[0].length;
+        continue;
+      }
+
+      if (atobMatch) {
+        findings.push({
+          rule: 'JS005',
+          severity: 'warning',
+          line,
+          message: 'Base64 decoding with atob() may be used to hide code.',
+        });
+
+        index += atobMatch[0].length;
         continue;
       }
     }
